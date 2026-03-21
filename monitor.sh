@@ -114,7 +114,7 @@ try:
     keywords = ['trivy', 'vulnerability', 'cve', 'security', 'attack', 'breach', 'hack', 'exploit', 'supply chain']
     for p in posts:
         title = p.get('data', {}).get('title', '').lower()
-        if any(k in title for k in security_posts):
+        if any(k in title for k in keywords):
             security_posts.append({
                 'title': p.get('data', {}).get('title', ''),
                 'score': p.get('data', {}).get('score', 0),

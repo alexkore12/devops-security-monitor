@@ -9,6 +9,7 @@ Monitoreo automatizado de vulnerabilidades en herramientas y flujos DevOps. Dete
 - **Alertas automatizadas**: Notificaciones de vulnerabilidades críticas
 - **Integración con Trivy**: Escaneo de contenedores y configuración
 - **Dashboard JSON**: Generación de reportes en formato JSON
+- **Monitoreo de Supply Chain**: Detección de ataques en la cadena de suministro
 
 ## 📂 Estructura
 
@@ -66,11 +67,41 @@ export TELEGRAM_CHAT_ID=""
 export ALERT_THRESHOLD=7                 # Nivel mínimo de severidad (1-10)
 ```
 
+## ⚠️ Alerta de Seguridad: Trivy Supply Chain Attack
+
+**Fecha de detección:** Marzo 2026
+
+Se han detectado publicaciones críticas en comunidades de seguridad sobre ataques de supply chain en Trivy:
+
+| Publicación | Puntos | Subtema |
+|-------------|--------|---------|
+| Auto removal of posts from new accounts | 202 | Supply Chain |
+| Trivy - Supply chain attack | 106 | Vulnerabilidad Crítica |
+| A Technical Write Up on the Trivy Supply Chain Attack | 33 | Análisis Técnico |
+
+### Recomendaciones
+
+1. **Verificar versión de Trivy**: Asegurarse de usar la última versión parcheada
+2. **Firmas de verificación**: Verificar integridad de binarios con signatures
+3. **Escaneo en local**: Ejecutar escaneos en entornos aislados
+4. **Monitoreo continuo**: Usar este monitor para detectar nuevas amenazas
+
+```bash
+# Verificar versión instalada
+trivy --version
+
+# Actualizar DB
+trivy db update
+
+# Escaneo completo
+trivy fs --security-checks vuln,config .
+```
+
 ## 🔧 Herramientas Monitoreadas
 
 | Herramienta | Estado | Última Versión |
 |-------------|--------|----------------|
-| Trivy | ✅ | v0.57.0 |
+| Trivy | ⚠️ | v0.57.0 (verificar) |
 | Docker | ✅ | 27.0 |
 | Kubernetes | ✅ | 1.31 |
 | Terraform | ✅ | 1.10 |
@@ -150,6 +181,21 @@ Este proyecto fue generado automáticamente basándose en:
 - Trends detectados en r/devops, r/programming, r/cybersecurity
 - GitHub Advisory Database
 - OpenClaw autonomous agents
+- **Alertas de Supply Chain**: Trivy vulnerability news (Marzo 2026)
+
+## 🛠️ Desarrollo
+
+### Agregar nueva herramienta
+
+Editar el array `TOOLS` en `monitor.sh`:
+
+```bash
+TOOLS=("trivy" "docker" "kubernetes" "terraform" "nueva-herramienta")
+```
+
+### Agregar nuevo canal de notificaciones
+
+Editar la función `send_notifications()` en `monitor.sh`.
 
 ## 📝 Licencia
 
@@ -163,3 +209,4 @@ MIT License - Ver archivo LICENSE para detalles.
 ---
 
 *Monitoreo activado: 2026-03-21*
+*Última actualización: 2026-03-21 - Añadido monitoreo de supply chain*
