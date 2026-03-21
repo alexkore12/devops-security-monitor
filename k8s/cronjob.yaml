@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: devops-security-monitor
+  namespace: devops
+spec:
+  schedule: "0 8 * * *"  # Daily at 8:00 UTC
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: monitor
+            image: alpine:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              apk add --no-cache curl jq bash
+              curl -s https://raw.githubusercontent.com/alexkore12/devops-security-monitor/main/monitor.sh -o monitor.sh
+              chmod +x monitor.sh
+              ./monitor.sh
+            env:
+            - name: ALERT_THRESHOLD
+              value: "7"
+            - name: OUTPUT_DIR
+              value: "/output"
+          restartPolicy: OnFailure
