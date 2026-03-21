@@ -1,1 +1,14 @@
-.github/workflows/ci.yml
+# DevOps
+*.log
+*.tmp
+output/
+tmp/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
