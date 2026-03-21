@@ -67,24 +67,47 @@ export TELEGRAM_CHAT_ID=""
 export ALERT_THRESHOLD=7                 # Nivel mínimo de severidad (1-10)
 ```
 
-## ⚠️ Alerta de Seguridad: Trivy Supply Chain Attack
+## ⚠️ Alerta de Seguridad: Trivy Supply Chain Attack (SEGUNDO ATAQUE)
 
-**Fecha de detección:** Marzo 2026
+**⚠️ URGENTE - Segundo ataque detectado: 21-Marzo-2026**
 
-Se han detectado publicaciones críticas en comunidades de seguridad sobre ataques de supply chain en Trivy:
+Se han detectado **DOS ataques de supply chain** contra Trivy en menos de un mes:
 
+### Primer Ataque (Febrero 2026)
 | Publicación | Puntos | Subtema |
 |-------------|--------|---------|
 | Auto removal of posts from new accounts | 202 | Supply Chain |
 | Trivy - Supply chain attack | 106 | Vulnerabilidad Crítica |
 | A Technical Write Up on the Trivy Supply Chain Attack | 33 | Análisis Técnico |
 
-### Recomendaciones
+### ⚠️ Segundo Ataque (21-Marzo 2026) - CRÍTICO
+| Aspecto | Detalle |
+|---------|---------|
+| Versiones afectadas | 0.69.4 (maliciosa), 0.69.3, 0.69.2, 0.69.1, 0.69.0 |
+| Vector de ataque | GitHub Actions comprometidas (aquasecurity/setup-trivy, aquasecurity/trivy-action) |
+| Severidad | CRÍTICA - Ejecución de código arbitrario |
+| Impacto | CI/CD pipelines comprometidos |
 
-1. **Verificar versión de Trivy**: Asegurarse de usar la última versión parcheada
-2. **Firmas de verificación**: Verificar integridad de binarios con signatures
-3. **Escaneo en local**: Ejecutar escaneos en entornos aislados
-4. **Monitoreo continuo**: Usar este monitor para detectar nuevas amenazas
+### Recomendaciones INMEDIATAS
+
+1. **Verificar versión de Trivy**: 
+   ```bash
+   trivy --version
+   # Si es 0.69.x → ACTUALIZAR INMEDIATAMENTE
+   ```
+
+2. **Revisar GitHub Actions**: 
+   - Verificar uso de `aquasecurity/setup-trivy`
+   - Considerar descarga directa de binarios
+
+3. **Firmas de verificación**: Verificar integridad de binarios con signatures
+   ```bash
+   # Verificar checksum
+   cosign verify --key cosign.pub ghcr.io/aquasecurity/trivy:latest
+   ```
+
+4. **Escaneo en local**: Ejecutar escaneos en entornos aislados
+5. **Monitoreo continuo**: Usar este monitor para detectar nuevas amenazas
 
 ```bash
 # Verificar versión instalada
@@ -95,6 +118,9 @@ trivy db update
 
 # Escaneo completo
 trivy fs --security-checks vuln,config .
+
+# Si está comprometido: reinstalar desde fuente confiable
+# Descargar desde: https://github.com/aquasecurity/trivy/releases
 ```
 
 ## 🔧 Herramientas Monitoreadas
@@ -209,4 +235,17 @@ MIT License - Ver archivo LICENSE para detalles.
 ---
 
 *Monitoreo activado: 2026-03-21*
-*Última actualización: 2026-03-21 - Añadido monitoreo de supply chain*
+*Última actualización: 2026-03-21 16:05 - Segundo ataque supply chain Trivy documentado*
+
+---
+
+## 🚨 Alertas en Tiempo Real
+
+Este monitor ahora incluye detección automática de:
+
+- **CVE-2024-21626 Trivy** - Escape de contenedor (primer ataque)
+- **Trivy v0.69.4 supply chain** - Segundo ataque (21-Mar-2026)
+- **CVE-2026-28500 ONNX** - CVSS 9.1, silent=True
+- **GitHub Actions comprometidas** - Vector del segundo ataque
+
+Ejecutar `./monitor.sh` para obtener alertas actualizadas.
