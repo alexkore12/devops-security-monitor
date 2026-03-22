@@ -288,6 +288,43 @@ MIT
 
 ---
 
+## 🛡️ Guía de Seguridad para MCP Servers
+
+Los Model Context Protocol (MCP) servers son una nueva tendencia que requiere consideraciones de seguridad específicas:
+
+### Riesgos Principales
+1. **Exposición de herramientas**: Los MCP servers pueden exponer funciones sensibles al AI
+2. **Data leakage**: Posible filtración de datos a través de herramientas
+3. **Prompt injection**: Inyección de comandos maliciosos
+4. **过度权限 (Over-permission)**: Permisos excesivos en herramientas
+
+### Mejores Prácticas
+```bash
+# 1. Aislamiento
+- Usar contenedores separados para cada MCP server
+- Limitar acceso a red (network policies)
+
+# 2. Least Privilege
+- Definir permisos mínimos necesarios
+- Revocar acceso cuando no se use
+
+# 3. Monitoreo
+- Logging de todas las llamadas a herramientas
+- Alertas ante patrones sospechosos
+- Auditar regularmente permisos
+
+# 4. Validación
+- Validar todos los inputs del usuario
+- Sanitizar outputs antes de retornarlos
+```
+
+### Recursos
+- [MCP Security Guidelines](https://modelcontextprotocol.io/docs)
+- [Anthropic AI Security](https://docs.anthropic.com/en/docs/mcp/security)
+
+---
+
 *Monitoreo activado: 2026-03-21*
 *Actualizado: 2026-03-22 - Agregadas alternativas Grype y Checkov*
 *Actualizado: 2026-03-22 - Agregado GitHub Actions CI/CD*
+*Actualizado: 2026-03-22 - Agregada guía de seguridad MCP*
