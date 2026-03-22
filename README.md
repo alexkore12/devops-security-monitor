@@ -1,71 +1,71 @@
 # DevOps Security Monitor
 
-Monitoreo automatizado de vulnerabilidades en herramientas y flujos DevOps. Detecta tendencias de seguridad, vulnerabilidades CVEs, y alertas en tiempo real.
+Sistema de monitoreo automatizado de seguridad para herramientas DevOps, con énfasis especial en **detección de ataques a la cadena de suministro (Supply Chain Attacks)**.
 
-## 🎯 Características
+## ⚠️ Alerta Reciente: Trivy Supply Chain Attack
 
+<<<<<<< HEAD
 - **Monitor de CVEs**: Consulta la base de datos de advisories de GitHub
 - **Análisis de Reddit**: Scraping de tendencias de seguridad en comunidades DevOps
 - **Alertas automatizadas**: Notificaciones de vulnerabilidades críticas
 - **Integración con Trivy**: Escaneo de contenedores y configuración
 - **Dashboard JSON**: Generación de reportes en formato JSON
+=======
+**Marzo 2026**: Trivy fue comprometido por segunda vez en un mes mediante un ataque a la cadena de suministro.
+>>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
 
-## 📂 Estructura
+- **Versión comprometida**: 0.69.4
+- **Vector**: GitHub Actions malicioso
+- **Alternativas recomendadas**: Grype, Checkov
 
-```
-devops-security-monitor/
-├── README.md                    # Este archivo
-├── monitor.sh                   # Script principal de monitoreo
-├── scripts/
-│   ├── check_advisories.sh      # Consulta GitHub Advisory Database
-│   ├── reddit_scraper.sh        # Scraping de tendencias Reddit
-│   └── notify.sh                # Sistema de notificaciones
-├── k8s/
-│   ├── deployment.yaml          # Deployment Kubernetes
-│   ├── service.yaml             # Servicio Kubernetes
-│   └── cronjob.yaml             # CronJob para ejecución periódica
-└── docs/
-    └── architecture.md          # Documentación de arquitectura
-```
+Este monitor incluye detección específica para estas amenazas.
 
-## 🚀 Uso Rápido
+## Características
 
-### Instalación
+### 🔍 Monitoreo de Seguridad
+
+- **Vulnerabilidades conocidas**: Consulta la base de datos de advisories de GitHub
+- **Detección de Supply Chain Attacks**: Identifica ataques a la cadena de suministro
+- **Monitoreo específico de Trivy**: Alertas para versiones comprometidas
+- **Tendencias de seguridad**: Monitoreo de Reddit para detección temprana
+
+### 📊 Reportes
+
+- Reportes en formato JSON
+- Score de amenaza (1-10)
+- Nivel de amenaza: CRITICAL / HIGH / MEDIUM / LOW
+- Alertas de vulnerabilidades de supply chain
+
+### 🔔 Notificaciones
+
+- Slack Webhook
+- Discord Webhook
+
+## Uso
+
+### Básico
 
 ```bash
-# Clonar repositorio
-git clone https://github.com/alexkore12/devops-security-monitor.git
-cd devops-security-monitor
-
-# Hacer ejecutable
-chmod +x monitor.sh
-```
-
-### Ejecución
-
-```bash
-# Monitoreo completo
 ./monitor.sh
-
-# Solo advisory check
-./scripts/check_advisories.sh
-
-# Solo scraping Reddit
-./scripts/reddit_scraper.sh
 ```
 
-### Configuración
-
-Crear archivo `.env`:
+### Con variables de entorno
 
 ```bash
-export GITHUB_TOKEN="ghp_xxxx"          # Token GitHub (opcional, para mayor rate limit)
-export SLACK_WEBHOOK="https://hooks.slack.com/..."
-export TELEGRAM_BOT_TOKEN=""
-export TELEGRAM_CHAT_ID=""
-export ALERT_THRESHOLD=7                 # Nivel mínimo de severidad (1-10)
+# Configurar threshold de alertas
+export ALERT_THRESHOLD=7
+
+# Webhooks
+export SLACK_WEBHOOK="https://hooks.slack.com/services/xxx"
+export DISCORD_WEBHOOK="https://discord.com/api/webhooks/xxx"
+
+# Directorio de salida
+export OUTPUT_DIR="/tmp"
+
+./monitor.sh
 ```
 
+<<<<<<< HEAD
 ## 🔧 Herramientas Monitoreadas
 
 | Herramienta | Estado | Última Versión |
@@ -78,50 +78,80 @@ export ALERT_THRESHOLD=7                 # Nivel mínimo de severidad (1-10)
 | Jenkins | ✅ | 2.480 |
 | GitLab | ✅ | 17.6 |
 | GitHub Actions | ✅ | - |
+=======
+### Programar con Cron
 
-## 📊 Salida
+```bash
+# Ejecutar cada hora
+0 * * * * /path/to/monitor.sh >> /var/log/security.log 2>&1
+```
 
-### JSON Report
+## Configuración
+
+### Herramientas monitoreadas
+>>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
+
+```bash
+TOOLS=("trivy" "docker" "kubernetes" "terraform" "ansible" "jenkins" "gitlab" "github-actions")
+```
+
+### Versiones comprometidas conocidas
+
+El script mantiene una lista actualizada de versiones conocidas como comprometidas:
+
+| Herramienta | Versión | CVE | Descripción |
+|------------|---------|-----|-------------|
+| Trivy | 0.69.4 | - | Supply chain attack (GitHub Actions) |
+| Trivy | 0.69.3 | CVE-2024-21626 | Container breakout |
+| Log4j | 2.14.0 | CVE-2021-44228 | Log4Shell RCE |
+| XZ | 5.6.0/5.6.1 | CVE-2024-3094 | Backdoor |
+
+## Salida
+
+### Archivo JSON
 
 ```json
 {
-  "timestamp": "2026-03-21T12:00:00Z",
-  "tools_checked": 8,
-  "critical_alerts": 2,
-  "advisories": [
-    {
-      "ghsa_id": "GHSA-xxxx-xxxx",
-      "tool": "trivy",
-      "severity": "HIGH",
-      "summary": "..."
-    }
-  ],
-  "trends": [
-    {
-      "source": "reddit",
-      "subreddit": "r/devops",
-      "title": "Trivy Supply Chain Attack",
-      "score": 227
-    }
-  ]
+  "timestamp": "2026-03-21T18:00:00Z",
+  "threat_score": 8,
+  "threat_level": "HIGH",
+  "supply_chain_alerts": 3,
+  "trivy_status": {
+    "status": "installed",
+    "is_compromised": false,
+    "alerts": []
+  },
+  "supply_chain_vulnerabilities": [...],
+  "trends": [...]
 }
 ```
 
-## 🔄 Integración con Kubernetes
+### Consola
 
-```bash
-# Aplicar manifiestos
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+```
+========================================
+   RESUMEN DE SEGURIDAD DevOps
+========================================
 
-# Programar ejecución diaria
-kubectl apply -f k8s/cronjob.yaml
+Nivel de Amenaza: HIGH (Score: 8/10)
+Alertas de Supply Chain: 3
+
+=== Vulnerabilidades de Supply Chain ===
+  [CRITICAL] CVE-2024-3094: Backdoor in xz/lzma (pkg: xz)
+  [CRITICAL] CVE-2021-44228: Log4Shell RCE (pkg: log4j-core)
+
+=== Tendencias de Seguridad ===
+  [↑ 227] Trivy supply chain attack - r/devops
 ```
 
-## 📅 Programación
+## Requisitos
 
-El monitor puede ejecutarse:
+- bash
+- curl
+- jq
+- python3
 
+<<<<<<< HEAD
 - **Manual**: `./monitor.sh`
 - **Cron**: `0 8 * * * /path/to/monitor.sh`
 - **Kubernetes CronJob**: Diariamente a las 8:00 UTC
@@ -150,16 +180,38 @@ Este proyecto fue generado automáticamente basándose en:
 - Trends detectados en r/devops, r/programming, r/cybersecurity
 - GitHub Advisory Database
 - OpenClaw autonomous agents
+=======
+## Instalación
 
-## 📝 Licencia
+```bash
+git clone https://github.com/alexkore12/devops-security-monitor.git
+cd devops-security-monitor
+chmod +x monitor.sh
 
-MIT License - Ver archivo LICENSE para detalles.
+# Probar
+./monitor.sh
+```
 
-## 👤 Autor
+## Docker
 
-- **GitHub**: [alexkore12](https://github.com/alexkore12)
-- **Proyecto**: OpenClaw AI Assistant
+```bash
+docker build -t devops-security-monitor .
+docker run -it -e SLACK_WEBHOOK="$SLACK_WEBHOOK" devops-security-monitor
+```
+>>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
 
----
+## Kubernetes
 
+Ver directorio `k8s/` para manifests de despliegue.
+
+## Contribuir
+
+Ver `CONTRIBUTING.md` para guidelines.
+
+## Licencia
+
+<<<<<<< HEAD
 *Monitoreo activado: 2026-03-21*
+=======
+MIT
+>>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
