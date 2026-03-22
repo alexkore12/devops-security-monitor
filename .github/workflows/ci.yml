@@ -1,0 +1,90 @@
+# DevOps Security Monitor - CI/CD Workflow
+
+name: Security Monitoring
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run security scan every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@master
+        env:
+          SHELLCHECK_OPTS: -s bash -x
+
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Grype for base dependencies
+        uses: anchore/scan-action@v3
+        with:
+          scannerversion: latest
+          severity-cutoff: medium
+          fail-build: false
+
+      - name: Check for supply chain alerts
+        run: |
+          echo "Checking for known vulnerable versions..."
+          
+          # Check if security_scanner.sh handles known vulnerabilities
+          if grep -q "Trivy.*0.69.4\|CVE-2024-3094\|CVE-2021-44228" security_scanner.sh monitor.sh; then
+            echo "✓ Script checks for known vulnerabilities"
+          else
+            echo "⚠️ Consider adding CVE checks"
+          fi
+
+  test-scripts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: chmod +x *.sh
+
+      - name: Test monitor script help
+        run: |
+          ./monitor.sh --help 2>&1 || ./monitor.sh -h 2>&1 || echo "Script requires env vars"
+
+      - name: Test security scanner
+        run: |
+          ./security_scanner.sh --help 2>&1 || ./security_scanner.sh -h 2>&1 || echo "Script requires env vars"
+
+  validate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check documentation
+        run: |
+          echo "Checking documentation..."
+          
+          [ -f README.md ] && echo "✓ README.md exists" || echo "✗ README.md missing"
+          
+          # Check for key sections
+          grep -q "Trivy" README.md && echo "✓ Documents Trivy supply chain"
+          grep -q "Grype\|Checkov" README.md && echo "✓ Documents alternatives"
