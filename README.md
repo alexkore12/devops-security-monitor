@@ -4,21 +4,75 @@ Sistema de monitoreo automatizado de seguridad para herramientas DevOps, con én
 
 ## ⚠️ Alerta Reciente: Trivy Supply Chain Attack
 
-<<<<<<< HEAD
-- **Monitor de CVEs**: Consulta la base de datos de advisories de GitHub
-- **Análisis de Reddit**: Scraping de tendencias de seguridad en comunidades DevOps
-- **Alertas automatizadas**: Notificaciones de vulnerabilidades críticas
-- **Integración con Trivy**: Escaneo de contenedores y configuración
-- **Dashboard JSON**: Generación de reportes en formato JSON
-=======
 **Marzo 2026**: Trivy fue comprometido por segunda vez en un mes mediante un ataque a la cadena de suministro.
->>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
 
 - **Versión comprometida**: 0.69.4
 - **Vector**: GitHub Actions malicioso
 - **Alternativas recomendadas**: Grype, Checkov
 
 Este monitor incluye detección específica para estas amenazas.
+
+## 🔐 Alternativas a Trivy Recomendadas
+
+Dado los recientes ataques a la cadena de suministro de Trivy (2° ataque en Marzo 2026), se recomiendan las siguientes alternativas:
+
+### Grype
+
+Escáner de vulnerabilidades de código abierto desarrollado por Anchore.
+
+```bash
+# Instalación
+brew install grype
+
+# Escaneo de imagen
+grype nginx:latest
+
+# Escaneo de directorio
+grype dir:/path/to/project
+
+# Generar SBOM
+grype sbom:nginx:latest -o json
+```
+
+**Ventajas:**
+- Base de datos de vulnerabilidades actualizada frecuentemente
+- Soporte para múltiples formatos de SBOM (CycloneDX, SPDX, Syft)
+- Integración con GitHub Actions
+- Menor superficie de ataque (menos dependencias)
+
+### Checkov
+
+Escáner de infraestructura como código (IaC) de Prisma Cloud.
+
+```bash
+# Instalación
+pip install checkov
+
+# Escaneo Terraform
+checkov -d /path/to/terraform
+
+# Escaneo Docker
+checkov -f Dockerfile
+
+# Escaneo Kubernetes
+checkov -d /path/to/k8s
+```
+
+**Ventajas:**
+- Más de 1000 políticas predefinidas
+- Soporte para Terraform, CloudFormation, Kubernetes, Docker, Azure ARM, etc.
+- Integración con CI/CD
+- Salida en múltiples formatos (JSON, SARIF, JUnit XML)
+
+### Comparativa
+
+| Característica | Grype | Checkov | Trivy |
+|---------------|-------|---------|-------|
+| Vulnerabilidades Container | ✅ | ❌ | ✅ |
+| IaC Scanning | ❌ | ✅ | Parcial |
+| Velocidad | Rápido | Medio | Rápido |
+| SBOM Support | ✅ | ✅ | ✅ |
+| Supply Chain Security | ✅ | ✅ | ⚠️ Comprometido |
 
 ## Características
 
@@ -28,6 +82,7 @@ Este monitor incluye detección específica para estas amenazas.
 - **Detección de Supply Chain Attacks**: Identifica ataques a la cadena de suministro
 - **Monitoreo específico de Trivy**: Alertas para versiones comprometidas
 - **Tendencias de seguridad**: Monitoreo de Reddit para detección temprana
+- **Soporte para alternativas**: Detección de Grype y Checkov
 
 ### 📊 Reportes
 
@@ -40,6 +95,7 @@ Este monitor incluye detección específica para estas amenazas.
 
 - Slack Webhook
 - Discord Webhook
+- Telegram Bot (futuro)
 
 ## Uso
 
@@ -65,20 +121,6 @@ export OUTPUT_DIR="/tmp"
 ./monitor.sh
 ```
 
-<<<<<<< HEAD
-## 🔧 Herramientas Monitoreadas
-
-| Herramienta | Estado | Última Versión |
-|-------------|--------|----------------|
-| Trivy | ✅ | v0.57.0 |
-| Docker | ✅ | 27.0 |
-| Kubernetes | ✅ | 1.31 |
-| Terraform | ✅ | 1.10 |
-| Ansible | ✅ | 2.18 |
-| Jenkins | ✅ | 2.480 |
-| GitLab | ✅ | 17.6 |
-| GitHub Actions | ✅ | - |
-=======
 ### Programar con Cron
 
 ```bash
@@ -89,10 +131,9 @@ export OUTPUT_DIR="/tmp"
 ## Configuración
 
 ### Herramientas monitoreadas
->>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
 
 ```bash
-TOOLS=("trivy" "docker" "kubernetes" "terraform" "ansible" "jenkins" "gitlab" "github-actions")
+TOOLS=("trivy" "grype" "checkov" "docker" "kubernetes" "terraform" "ansible" "jenkins" "gitlab" "github-actions")
 ```
 
 ### Versiones comprometidas conocidas
@@ -117,10 +158,12 @@ El script mantiene una lista actualizada de versiones conocidas como comprometid
   "threat_level": "HIGH",
   "supply_chain_alerts": 3,
   "trivy_status": {
-    "status": "installed",
-    "is_compromised": false,
-    "alerts": []
+    "status": "compromised",
+    "version": "0.69.4",
+    "is_compromised": true,
+    "alert": "Supply chain attack detected"
   },
+  "alternatives_recommended": ["grype", "checkov"],
   "supply_chain_vulnerabilities": [...],
   "trends": [...]
 }
@@ -135,6 +178,11 @@ El script mantiene una lista actualizada de versiones conocidas como comprometid
 
 Nivel de Amenaza: HIGH (Score: 8/10)
 Alertas de Supply Chain: 3
+
+=== Estado de Herramientas de Seguridad ===
+  [ALERT] Trivy: Versión 0.69.4 comprometida
+  [INFO] Grype: Disponible (v0.80.0)
+  [INFO] Checkov: Disponible (v3.0.0)
 
 === Vulnerabilidades de Supply Chain ===
   [CRITICAL] CVE-2024-3094: Backdoor in xz/lzma (pkg: xz)
@@ -151,36 +199,6 @@ Alertas de Supply Chain: 3
 - jq
 - python3
 
-<<<<<<< HEAD
-- **Manual**: `./monitor.sh`
-- **Cron**: `0 8 * * * /path/to/monitor.sh`
-- **Kubernetes CronJob**: Diariamente a las 8:00 UTC
-
-## 🛡️ Alertas
-
-### Severidades
-
-| Nivel | Color | Acción |
-|-------|-------|--------|
-| CRITICAL | 🔴 | Notificación inmediata |
-| HIGH | 🟠 | Notificación en 1 hora |
-| MEDIUM | 🟡 | Resumen diario |
-| LOW | 🟢 | Reporte semanal |
-
-### Canales
-
-- **Slack**: Webhook configurado
-- **Telegram**: Bot API
-- **Email**: SMTP (futuro)
-
-## 🤖 Automatización
-
-Este proyecto fue generado automáticamente basándose en:
-
-- Trends detectados en r/devops, r/programming, r/cybersecurity
-- GitHub Advisory Database
-- OpenClaw autonomous agents
-=======
 ## Instalación
 
 ```bash
@@ -198,7 +216,6 @@ chmod +x monitor.sh
 docker build -t devops-security-monitor .
 docker run -it -e SLACK_WEBHOOK="$SLACK_WEBHOOK" devops-security-monitor
 ```
->>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
 
 ## Kubernetes
 
@@ -210,8 +227,9 @@ Ver `CONTRIBUTING.md` para guidelines.
 
 ## Licencia
 
-<<<<<<< HEAD
-*Monitoreo activado: 2026-03-21*
-=======
 MIT
->>>>>>> 17cde975f33226af9b551a96579cda1da3d5307f
+
+---
+
+*Monitoreo activado: 2026-03-21*
+*Actualizado: 2026-03-22 - Agregadas alternativas Grype y Checkov*

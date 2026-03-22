@@ -63,7 +63,7 @@ log_info() { log "${GREEN}[INFO]${NC} $*"; }
 log_warn() { log "${YELLOW}[WARN]${NC} $*"; }
 log_error() { log "${RED}[ERROR]${NC} $*"; }
 
-log_critical() { 
+log_critical() {
     log "${RED}[CRITICAL]${NC} $*"
     # Also write to stderr for immediate attention
     echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] [CRITICAL] $*" >&2
@@ -89,7 +89,7 @@ check_known_compromised() {
     local tool=$1
     local version=$2
     local key="${tool}:${version}"
-    
+
     if [[ -v "KNOWN_COMPROMISED[$key]" ]]; then
         echo "{\"compromised\": true, \"reason\": \"${KNOWN_COMPROMISED[$key]}\", \"cve\": \"${key}\"}"
         return 0
@@ -100,9 +100,9 @@ check_known_compromised() {
 # Check GitHub Advisory Database for supply chain vulnerabilities
 check_supply_chain_advisories() {
     local advisories=()
-    
+
     log_info "Consultando advisories de supply chain..."
-    
+
     # Query GitHub Advisory API for supply chain related CVEs
     local response
     response=$(curl -s --max-time 15 \
@@ -110,12 +110,12 @@ check_supply_chain_advisories() {
         -H "Accept: application/vnd.github+json" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
         2>/dev/null || echo "[]")
-    
+
     if [ "$response" = "[]" ] || [ -z "$response" ]; then
         echo "[]"
         return
     fi
-    
+
     # Filter for supply chain vulnerabilities
     echo "$response" | python3 -c "
 import sys, json
@@ -124,29 +124,29 @@ import re
 try:
     data = json.load(sys.stdin)
     supply_chain_cves = []
-    
+
     # Keywords that indicate supply chain attacks
     keywords = ['supply chain', 'typosquatting', 'dependency confusion', 'malicious', 'compromised', 'backdoor', 'dependency hijacking']
-    
+
     for adv in data:
         summary = adv.get('summary', '').lower()
         description = adv.get('description', '').lower()
         cve_id = adv.get('cve_id', '')
         ghsa_id = adv.get('ghsa_id', '')
         severity = adv.get('severity', 'UNKNOWN')
-        
+
         # Check if it's supply chain related
         is_supply_chain = any(k in summary or k in description for k in keywords)
-        
+
         # Also check for specific known supply chain CVEs
         known_supply_chain = ['CVE-2024-21626', 'CVE-2024-3094', 'CVE-2021-44228', 'CVE-2022-22965', 'CVE-2023-44487']
         is_known = any(cve in cve_id for cve in known_supply_chain)
-        
+
         if is_supply_chain or is_known:
             # Determine numeric severity
             severity_map = {'CRITICAL': 10, 'HIGH': 7, 'MEDIUM': 5, 'LOW': 2, 'UNKNOWN': 1}
             numeric_severity = severity_map.get(severity.upper(), 1)
-            
+
             supply_chain_cves.append({
                 'cve_id': cve_id,
                 'ghsa_id': ghsa_id,
@@ -158,7 +158,7 @@ try:
                 'vulnerable_version': adv.get('vulnerabilities', [{}])[0].get('vulnerable_version_range', 'Unknown'),
                 'package': adv.get('vulnerabilities', [{}])[0].get('package', {}).get('name', 'Unknown')
             })
-    
+
     # Sort by severity
     supply_chain_cves.sort(key=lambda x: x['numeric_severity'], reverse=True)
     print(json.dumps(supply_chain_cves[:10]))
@@ -173,29 +173,29 @@ except Exception as e:
 
 check_trivy_security() {
     log_info "Ejecutando verificación específica de Trivy..."
-    
+
     local trivy_status="unknown"
     local installed_version=""
     local vulnerabilities=()
     local alerts=()
-    
+
     # Check if trivy is installed
     if command -v trivy &> /dev/null; then
         installed_version=$(trivy version 2>/dev/null | head -1 || echo "unknown")
         trivy_status="installed"
-        
+
         # CRITICAL: Check for compromised versions
         if [[ "$installed_version" == *"0.69.4"* ]]; then
             log_critical "DETECTADO: Trivy v0.69.4 - VERSIÓN COMPROMETIDA"
             log_critical "Esta versión fue victima de supply chain attack"
             alerts+=("CRITICAL: Trivy v0.69.4 is compromised - DO NOT USE")
         fi
-        
+
         # Check for vulnerabilities in trivy itself
         log_info "Buscando vulnerabilidades en Trivy..."
         local vuln_output
         vuln_output=$(trivy image --severity CRITICAL,HIGH aquasec/trivy:latest 2>/dev/null | head -20 || echo "")
-        
+
         if [[ -n "$vuln_output" ]]; then
             vulnerabilities+=("$vuln_output")
         fi
@@ -203,7 +203,7 @@ check_trivy_security() {
         trivy_status="not_installed"
         log_warn "Trivy no está instalado en este sistema"
     fi
-    
+
     # Return JSON status
     cat <<EOF
 {
@@ -217,13 +217,93 @@ EOF
 }
 
 # ============================================
+# GRYPE ALTERNATIVE CHECK (Recommended after Trivy compromise)
+# ============================================
+
+check_grype_security() {
+    log_info "Verificando Grype (alternativa recomendada a Trivy)..."
+
+    local grype_status="unknown"
+    local installed_version=""
+    local db_status="unknown"
+
+    # Check if grype is installed
+    if command -v grype &> /dev/null; then
+        installed_version=$(grype version 2>/dev/null | head -1 || echo "unknown")
+        grype_status="installed"
+
+        # Check database age
+        local db_age
+        db_age=$(grype db list 2>/dev/null | grep "Built:" | head -1 || echo "")
+        if [[ -n "$db_age" ]]; then
+            db_status="updated"
+        else
+            db_status="needs_update"
+        fi
+
+        log_info "Grype encontrado: $installed_version"
+    else
+        grype_status="not_installed"
+        log_warn "Grype no está instalado. Alternativa recomendada tras compromiso de Trivy."
+    fi
+
+    # Return JSON status
+    cat <<EOF
+{
+  "status": "$grype_status",
+  "installed_version": "$installed_version",
+  "database_status": "$db_status",
+  "recommended": true,
+  "alternatives": ["trivy", "checkov"]
+}
+EOF
+}
+
+# ============================================
+# CHECKOV ALTERNATIVE CHECK (Infrastructure as Code)
+# ============================================
+
+check_checkov_security() {
+    log_info "Verificando Checkov (alternativa para IaC)..."
+
+    local checkov_status="unknown"
+    local installed_version=""
+    local policies_loaded=0
+
+    # Check if checkov is installed
+    if command -v checkov &> /dev/null; then
+        installed_version=$(checkov --version 2>/dev/null | head -1 || echo "unknown")
+        checkov_status="installed"
+
+        # Count policies
+        policies_loaded=$(checkov --list-policies 2>/dev/null | grep -c "CKV_" || echo 0)
+
+        log_info "Checkov encontrado: $installed_version ($policies_loaded políticas)"
+    else
+        checkov_status="not_installed"
+        log_warn "Checkov no está instalado. Alternativa para escaneo de IaC."
+    fi
+
+    # Return JSON status
+    cat <<EOF
+{
+  "status": "$checkov_status",
+  "installed_version": "$installed_version",
+  "policies_loaded": $policies_loaded,
+  "recommended_for": ["terraform", "kubernetes", "docker", "cloudformation"],
+  "alternatives": ["trivy", "grype"]
+}
+EOF
+}
+
+# ============================================
 # REDDIT TREND MONITORING
 # ============================================
 
 check_reddit_trends() {
     local subreddit=$1
     local output_file="/tmp/reddit_${subreddit}_check.json"
-    
+
     # Check cache (1 hour)
     if [ -f "$output_file" ]; then
         local age
@@ -234,14 +314,14 @@ check_reddit_trends() {
             return
         fi
     fi
-    
+
     log_info "Consultando Reddit: $subreddit"
     local response
     response=$(curl -s --max-time 10 \
         "https://www.reddit.com/r/${subreddit}/hot.json?limit=25" \
         -H "User-Agent: DevOpsSecurityMonitor/1.0" \
         2>/dev/null || echo '{"data":{"children":[]}}')
-    
+
     echo "$response" | python3 -c "
 import sys, json
 try:
@@ -262,7 +342,7 @@ try:
 except:
     print('[]')
 " 2>/dev/null || echo "[]"
-    
+
     # Cache the result
     echo "$response" | python3 -c "
 import sys, json
@@ -295,9 +375,11 @@ generate_report() {
     local trends_json="$OUTPUT_DIR/trends_temp.json"
     local supply_chain_json="$OUTPUT_DIR/supply_chain_temp.json"
     local trivy_status_json="$OUTPUT_DIR/trivy_status_temp.json"
+    local grype_status_json="$OUTPUT_DIR/grype_status_temp.json"
+    local checkov_status_json="$OUTPUT_DIR/checkov_status_temp.json"
     
     log_info "Generando reporte completo de seguridad..."
-    
+
     # 1. Collect supply chain advisories (MOST IMPORTANT)
     log_info "Recolectando advisories de supply chain..."
     check_supply_chain_advisories > "$supply_chain_json"
@@ -306,7 +388,15 @@ generate_report() {
     log_info "Verificando estado de Trivy..."
     check_trivy_security > "$trivy_status_json"
     
-    # 3. Collect general advisories
+    # 3. Check Grype (recommended alternative)
+    log_info "Verificando Grype..."
+    check_grype_security > "$grype_status_json"
+    
+    # 4. Check Checkov (recommended for IaC)
+    log_info "Verificando Checkov..."
+    check_checkov_security > "$checkov_status_json"
+    
+    # 5. Collect general advisories
     echo "[" > "$advisories_json"
     local first=true
     for tool in "${TOOLS[@]}"; do
@@ -314,7 +404,7 @@ generate_report() {
         adv=$(curl -s --max-time 10 \
             "https://api.github.com/advisories?affects=$tool&per_page=3" \
             2>/dev/null || echo "[]")
-        
+
         if [ "$adv" != "[]" ] && [ -n "$adv" ]; then
             if [ "$first" = true ]; then
                 first=false
@@ -325,7 +415,7 @@ generate_report() {
         fi
     done
     echo "]" >> "$advisories_json"
-    
+
     # 4. Collect trends
     echo '{"trends": [' > "$trends_json"
     first=true
@@ -342,7 +432,7 @@ generate_report() {
         fi
     done
     echo "]}" >> "$trends_json"
-    
+
     # 5. Calculate threat score
     local supply_chain_count
     supply_chain_count=$(cat "$supply_chain_json" | jq 'length' 2>/dev/null || echo "0")
@@ -350,7 +440,7 @@ generate_report() {
     trivy_compromised=$(cat "$trivy_status_json" | jq -r '.is_compromised' 2>/dev/null || echo "false")
     local critical_advisories
     critical_advisories=$(cat "$advisories_json" | jq '[.[] | select(.severity == "CRITICAL")] | length' 2>/dev/null || echo "0")
-    
+
     # Calculate overall threat score (1-10)
     local threat_score=1
     if [ "$trivy_compromised" = "true" ]; then
@@ -362,11 +452,26 @@ generate_report() {
     elif [ "$critical_advisories" -gt 0 ]; then
         threat_score=5
     fi
-    
+
     # 6. Build final report
     local timestamp
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Get alternative tools status
+    local grype_installed
+    grype_installed=$(cat "$grype_status_json" | jq -r '.status' 2>/dev/null || echo "unknown")
+    local checkov_installed
+    checkov_installed=$(cat "$checkov_status_json" | jq -r '.status' 2>/dev/null || echo "unknown")
     
+    # Build alternatives array
+    local alternatives_json="[]"
+    if [ "$grype_installed" = "installed" ]; then
+        alternatives_json="[\"grype\"]"
+    fi
+    if [ "$checkov_installed" = "installed" ]; then
+        alternatives_json=$(echo "$alternatives_json" | jq '. + ["checkov"]' 2>/dev/null || echo "[\"checkov\"]")
+    fi
+
     cat > "$OUTPUT_FILE" <<EOF
 {
   "timestamp": "$timestamp",
@@ -376,15 +481,18 @@ generate_report() {
   "supply_chain_alerts": $supply_chain_count,
   "critical_advisories": $critical_advisories,
   "trivy_status": $(cat "$trivy_status_json"),
+  "grype_status": $(cat "$grype_status_json"),
+  "checkov_status": $(cat "$checkov_status_json"),
+  "recommended_alternatives": $alternatives_json,
   "supply_chain_vulnerabilities": $(cat "$supply_chain_json"),
   "general_advisories": $(cat "$advisories_json"),
   "trends": $(cat "$trends_json" | jq '.trends')
 }
 EOF
-    
+
     # Cleanup temp files
-    rm -f "$advisories_json" "$trends_json" "$supply_chain_json" "$trivy_status_json"
-    
+    rm -f "$advisories_json" "$trends_json" "$supply_chain_json" "$trivy_status_json" "$grype_status_json" "$checkov_status_json"
+
     log_info "Reporte generado: $OUTPUT_FILE"
 }
 
@@ -397,7 +505,7 @@ print_summary() {
     log_info "   RESUMEN DE SEGURIDAD DevOps"
     log_info "========================================"
     echo ""
-    
+
     if [ -f "$OUTPUT_FILE" ]; then
         local threat_score
         threat_score=$(cat "$OUTPUT_FILE" | jq -r '.threat_score // 0')
@@ -407,7 +515,7 @@ print_summary() {
         supply_chain_alerts=$(cat "$OUTPUT_FILE" | jq -r '.supply_chain_alerts // 0')
         local trivy_compromised
         trivy_compromised=$(cat "$OUTPUT_FILE" | jq -r '.trivy_status.is_compromised // false')
-        
+
         # Threat level color
         local level_color="$NC"
         case "$threat_level" in
@@ -416,10 +524,10 @@ print_summary() {
             "MEDIUM") level_color="$BLUE" ;;
             "LOW") level_color="$GREEN" ;;
         esac
-        
+
         echo -e "Nivel de Amenaza: ${level_color}$threat_level${NC} (Score: $threat_score/10)"
         echo "Alertas de Supply Chain: $supply_chain_alerts"
-        
+
         # CRITICAL: Trivy warning
         if [ "$trivy_compromised" = "true" ]; then
             echo ""
@@ -427,19 +535,19 @@ print_summary() {
             echo -e "${RED}   Versión 0.69.4 fue victima de supply chain attack${NC}"
             echo -e "${RED}   Recomendación: Cambiar a alternativa (grype, checkov)${NC}"
         fi
-        
+
         echo ""
         echo "=== Vulnerabilidades de Supply Chain ==="
-        cat "$OUTPUT_FILE" | jq -r '.supply_chain_vulnerabilities[:5][]? | 
-            "  [\(.severity)] \(.cve_id // "N/A"): \(.summary // "N/A")[:70]" + 
+        cat "$OUTPUT_FILE" | jq -r '.supply_chain_vulnerabilities[:5][]? |
+            "  [\(.severity)] \(.cve_id // "N/A"): \(.summary // "N/A")[:70]" +
             " (pkg: \(.package // "N/A"))"' 2>/dev/null || echo "  (Sin datos)"
-        
+
         echo ""
         echo "=== Tendencias de Seguridad ==="
-        cat "$OUTPUT_FILE" | jq -r '.trends[:5][]? | 
+        cat "$OUTPUT_FILE" | jq -r '.trends[:5][]? |
             "  [↑\(.score // 0)] \(.title // "N/A")[:60] - \(.subreddit // "N/A")"' 2>/dev/null || echo "  (Sin datos)"
     fi
-    
+
     echo ""
     log_info "Reporte completo: $OUTPUT_FILE"
 }
@@ -454,7 +562,7 @@ send_notifications() {
         threat_level=$(cat "$OUTPUT_FILE" | jq -r '.threat_level // "UNKNOWN"')
         local threat_score
         threat_score=$(cat "$OUTPUT_FILE" | jq -r '.threat_score // 0')
-        
+
         if [ "$threat_score" -ge 7 ]; then
             log_warn "Enviando notificación de alerta a Slack..."
             local payload
@@ -479,14 +587,14 @@ send_notifications() {
                 "$SLACK_WEBHOOK" 2>/dev/null || true
         fi
     fi
-    
+
     # Discord webhook
     if [ -n "${DISCORD_WEBHOOK:-}" ]; then
         local threat_level
         threat_level=$(cat "$OUTPUT_FILE" | jq -r '.threat_level // "UNKNOWN"')
         local threat_score
         threat_score=$(cat "$OUTPUT_FILE" | jq -r '.threat_score // 0')
-        
+
         if [ "$threat_score" -ge 7 ]; then
             log_warn "Enviando notificación a Discord..."
             local payload
@@ -515,12 +623,12 @@ main() {
     log_info "=== DevOps Security Monitor Started ==="
     log_info "Monitoring ${#TOOLS[@]} tools for security vulnerabilities"
     log_info "Focus: Supply Chain Attack Detection"
-    
+
     check_dependencies
     generate_report
     print_summary
     send_notifications
-    
+
     log_info "=== DevOps Security Monitor Finished ==="
 }
 
