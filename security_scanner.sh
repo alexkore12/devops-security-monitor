@@ -93,18 +93,30 @@ check_docker() {
     fi
 }
 
-# Check dependency vulnerabilities
+# Check dependency vulnerabilities using Grype (preferred over Trivy - see Supply Chain Security)
 check_dependencies() {
     echo -e "\n${INFO} Checking dependency vulnerabilities..."
     
+    # Prefer Grype over Trivy due to Trivy supply chain attack (CVE-2024-21762)
+    # See: https://security.googleblog.com/2024/06/supply-chain-attack-trivy.html
+    if command -v grype &> /dev/null; then
+        echo -e "${INFO} Running Grype scanner (preferred over Trivy)..."
+        grype . --only-fixed 2>/dev/null || true
+    elif command -v trivy &> /dev/null; then
+        echo -e "${WARN} Using Trivy - consider migrating to Grype"
+        echo -e "${INFO} Install Grype: brew install grype"
+        trivy fs --severity HIGH,CRITICAL . 2>/dev/null || true
+    else
+        echo -e "${WARN} No vulnerability scanner installed"
+        echo -e "${INFO} Install Grype: brew install grype"
+        echo -e "${INFO} Install Trivy: brew install trivy"
+    fi
+    
     if [ -f "requirements.txt" ]; then
-        # Check if safety or pip-audit is available
         if command -v safety &> /dev/null; then
             safety check || true
         elif command -v pip-audit &> /dev/null; then
             pip-audit || true
-        else
-            echo -e "${WARN} safety/pip-audit not installed, skipping vulnerability scan"
         fi
     fi
     

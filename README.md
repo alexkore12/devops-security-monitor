@@ -2,15 +2,40 @@
 
 Sistema de monitoreo automatizado de seguridad para herramientas DevOps, con énfasis especial en **detección de ataques a la cadena de suministro (Supply Chain Attacks)**.
 
-## ⚠️ Alerta Reciente: Trivy Supply Chain Attack
+## ⚠️ Alerta Reciente: Trivy Supply Chain Attack (2° Ataque)
 
-**Marzo 2026**: Trivy fue comprometido por segunda vez en un mes mediante un ataque a la cadena de suministro.
+**Marzo 2026**: Trivy fue comprometido por **segunda vez** en un mes mediante un sofisticado ataque a la cadena de suministro.
 
-- **Versión comprometida**: 0.69.4
-- **Vector**: GitHub Actions malicioso
-- **Alternativas recomendadas**: Grype, Checkov
+### Detalles del Ataque (19-21 Marzo 2026)
 
-Este monitor incluye detección específica para estas amenazas.
+| Aspecto | Detalle |
+|---------|---------|
+| **Versiones comprometidas** | Trivy v0.69.4, trivy-action, setup-trivy |
+| **Actor malicioso** | "TeamPCP" |
+| **Vector de ataque** | GitHub Actions compromiso |
+| **Impacto** | Infostealer --roba credenciales CI/CD |
+| **C2 Domain** | scan.aquasecurtiy[.]org |
+| **IP Maliciosa** | 45.148.10.212 |
+
+### Acciones Realizadas por Atacantes
+- Force-push a 75 de 76 tags en trivy-action
+- Compromiso de 3 componentes core
+- Distribución de infostealer silente
+
+### Versiones Seguras
+| Componente | Versión Segura | Commit |
+|-------------|----------------|--------|
+| Trivy | v0.69.3 | - |
+| trivy-action | v0.35.0 | 57a97c7 |
+| setup-trivy | v0.2.6 | 3fb12ec |
+
+### Acción Recomendada
+1. **INMEDIATO**: Rotar todos los secretos en pipelines
+2. NO usar Trivy v0.69.4
+3. Bloquear dominio/IP maliciosa
+4. Migrar a Grype o Checkov
+
+**Este monitor incluye detección específica para estas amenazas.**
 
 ## 🔐 Alternativas a Trivy Recomendadas
 
@@ -225,6 +250,38 @@ Ver directorio `k8s/` para manifests de despliegue.
 
 Ver `CONTRIBUTING.md` para guidelines.
 
+## 🔄 GitHub Actions - Monitoreo Automatizado
+
+El proyecto incluye un workflow de GitHub Actions en `.github/workflows/security.yml`:
+
+###触发器
+
+| Trigger | Descripción |
+|---------|-------------|
+| `schedule` | Cada hora (cron: `0 * * * *`) |
+| `push` | En push a main |
+| `workflow_dispatch` | Ejecución manual |
+
+### Jobs
+
+| Job | Descripción |
+|-----|-------------|
+| **security-scan** | Ejecuta monitor.sh, verifica herramientas |
+| **notify** | Envía alertas a Slack (configurable) |
+
+### Configuración de Secrets
+
+| Secret | Descripción |
+|--------|-------------|
+| `SLACK_WEBHOOK` | Webhook de Slack para notificaciones |
+
+### Uso Manual
+
+```bash
+# Ejecutar workflow manualmente
+gh workflow run security.yml
+```
+
 ## Licencia
 
 MIT
@@ -233,3 +290,4 @@ MIT
 
 *Monitoreo activado: 2026-03-21*
 *Actualizado: 2026-03-22 - Agregadas alternativas Grype y Checkov*
+*Actualizado: 2026-03-22 - Agregado GitHub Actions CI/CD*
