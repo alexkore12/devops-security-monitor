@@ -233,3 +233,11 @@ MIT
 
 *Monitoreo activado: 2026-03-21*
 *Actualizado: 2026-03-22 - Agregadas alternativas Grype y Checkov*
+*Actualizado: 2026-03-23 - Agregadas referencias*
+
+## 🌐 Referencias
+
+- [Grype Documentation](https://github.com/anchore/grype)
+- [Checkov Documentation](https://www.checkov.io/)
+- [GitHub Security Advisories](https://github.com/advisories)
+- [NIST NVD](https://nvd.nist.gov/)
